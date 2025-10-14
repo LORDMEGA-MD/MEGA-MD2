@@ -31,7 +31,7 @@
     
     body {
       font-family: 'Poppins', sans-serif;
-      background: url('https://cdn.ironman.my.id/i/5xtyu7.jpg') no-repeat center center fixed;
+      background: url('/MegaThmb/thumb1.jpg') no-repeat center center fixed;
       background-size: cover;
       display: flex;
       justify-content: center;
@@ -103,6 +103,459 @@
 }
 
     .subtitle {
+      text-align: center;
+      color: var(--text);
+      margin-bottom: 25px;
+      font-size: 14px;
+      opacity: 0.8;
+      line-height: 1.5;
+    }
+    
+    .input-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+    
+    .input-group input {
+      width: 100%;
+      padding: 15px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-weight: 500;
+    }
+    
+    .input-group input:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.2);
+    }
+    
+    .input-group label {
+      position: absolute;
+      left: 20px;
+      top: 15px;
+      color: #94a3b8;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.19));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 0 5px;
+    }
+    
+    .input-group input:focus + label,
+    .input-group input:not(:placeholder-shown) + label {
+      top: -22px;
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 500;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 10px;
+      background: var(--gradient);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn i {
+      font-size: 18px;
+    }
+    
+    .result {
+      margin-top: 25px;
+      text-align: center;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .code {
+      background: rgba(37, 211, 102, 0.1);
+      padding: 15px 25px;
+      border-radius: 10px;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(37, 211, 102, 0.2);
+    }
+    
+    .code:hover {
+      transform: scale(1.02);
+      background: rgba(37, 211, 102, 0.15);
+    }
+    
+    .code::after {
+      content: 'Click to copy';
+      position: absolute;
+      bottom: -20px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      color: var(--primary);
+      opacity: 0;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+    
+    .code:hover::after {
+      bottom: -25px;
+      opacity: 0.8;
+    }
+    
+    .status {
+      font-size: 14px;
+      color: var(--text);
+      opacity: 0.8;
+      margin-top: 10px;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--white);
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 12px;
+      color: var(--text);
+      opacity: 0.6;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .card {
+        padding: 20px;
+      }
+      
+      h2 {
+        font-size: 22px;
+      }
+      
+      .logo i {
+        font-size: 40px;
+        width: 70px;
+        height: 70px;
+        line-height: 70px;
+      }
+      .button-container {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h3 {
+      margin-top: -40px;
+      opacity: 0;
+      animation: fadeIn 3s forwards;
+    }
+
+    .button {
+      width: 140px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0px 15px;
+      background-color: red;
+      border-radius: 10px;
+      border: none;
+      color: white;
+      position: relative;
+      cursor: pointer;
+      font-weight: 900;
+      transition-duration: .2s;
+      background: linear-gradient(0deg, #000, #272727);
+      text-decoration: none;
+    }
+      .button:before, .button:after {
+      content: '';
+      position: absolute;
+      left: -2px;
+      top: -2px;
+      border-radius: 10px;
+      background: linear-gradient(45deg, #48ff00, #15ff00, #000000,#000000, #ff0000);
+      background-size: 400%;
+      width: calc(100% + 4px);
+      height: calc(100% + 4px);
+      z-index: -1;
+      animation: steam 10s linear infinite;
+    }
+
+    @keyframes steam {
+      0% {
+        background-position: 0 0;
+      }
+
+      50% {
+        background-position: 400% 0;
+      }
+
+      100% {
+        background-position: 0 0;
+      }
+    }
+
+    .button:after {
+      filter: blur(50px);
+    }
+
+    .button span {
+      z-index: 1;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+    }
+  </style>
+</head>
+<canvas id="canvas" style="position: absolute; top: 0; left: 0;"></canvas>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="logo">
+        <i class="fab fa-whatsapp"></i>
+      </div>
+      <h2>MEGA-MD GLOBAL PAIRING</h2>
+      <p class="subtitle">Enter your phone number with country code(256xxxxx) to get your pairing code</p>
+      
+      <div class="input-group">
+        <input type="tel" id="number" placeholder=" " pattern="[+]{1}[0-9]{11,14}" required>
+        <label for="number">Your Phone Number</label>
+      </div>
+      
+      <button class="btn" id="submit">
+        <i class="fas fa-key"></i> Get Code
+      </button>
+      
+      <div class="result" id="result">
+        <div id="status" class="status"></div>
+        <div id="pair" class="code" style="display: none;"></div>
+      </div>
+      <div style="text-align: center;">
+        <a href="https://wa.me/256753679393?text=> Hey%20mega𓃵," class="button move-down" target="_blank">
+          <i class="fab fa-whatsapp"></i> <span>MESSAGE</span> </a> <br>
+          <a href="https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w" class="button" target="_blank">
+          <i class="fab fa-whatsapp"></i> <span>CHANNEL</span> </a> <br>
+        
+      </div>
+      <div class="footer">
+        Secured connection with Encrypted verification.
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.0.0-alpha.1/axios.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const numberInput = document.getElementById('number');
+      const submitBtn = document.getElementById('submit');
+      const pairElement = document.getElementById('pair');
+      const statusElement = document.getElementById('status');
+      
+      // Format phone number as user types
+      numberInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 0) {
+          value = '+' + value;
+        }
+        e.target.value = value;
+      });
+      
+      submitBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const phoneNumber = numberInput.value.trim();
+        
+        if (!phoneNumber) {
+          showStatus('Please enter your WhatsApp number', 'error');
+          return;
+        }
+        
+        if (phoneNumber.replace(/[^0-9]/g, "").length < 11) {
+          showStatus('Invalid number format', 'error');
+          return;
+        }
+        
+        try {
+          // Show loading state
+          submitBtn.innerHTML = '<div class="loading"></div> Processing';
+          submitBtn.disabled = true;
+          
+          showStatus('Generating your pairing code...', 'processing');
+          
+          // Simulate API call (replace with your actual API call)
+          const { data } = await axios.get(`/code?number=${phoneNumber.replace('+', '')}`);
+          
+          // Display the code
+          const code = data.code || "1234 5678"; // Fallback for demo
+          pairElement.textContent = code;
+          pairElement.style.display = 'block';
+          pairElement.onclick = copyCode;
+          
+          showStatus('Your pairing code is ready!', 'success');
+          
+          // Reset button
+          submitBtn.innerHTML = '<i class="fas fa-key"></i> Get Code';
+          submitBtn.disabled = false;
+        } catch (error) {
+          showStatus('Service unavailable. Please try again later.', 'error');
+          console.error('Error:', error);
+          
+          // Reset button
+          submitBtn.innerHTML = '<i class="fas fa-key"></i> Get Code';
+          submitBtn.disabled = false;
+        }
+      });
+      
+      function showStatus(message, type) {
+        statusElement.textContent = message;
+        statusElement.style.color = type === 'error' ? '#f87171' : 
+                                  type === 'success' ? '#25D366' : 
+                                  '#94a3b8';
+      }
+      
+      async function copyCode() {
+        try {
+          await navigator.clipboard.writeText(this.textContent);
+          const originalText = this.textContent;
+          this.textContent = 'Copied!';
+          this.style.backgroundColor = 'rgba(37, 211, 102, 0.2)';
+          
+          setTimeout(() => {
+            this.textContent = originalText;
+            this.style.backgroundColor = 'rgba(37, 211, 102, 0.1)';
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy: ', err);
+        }
+      }
+    });
+  </script>
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Transparent Canvas Animation</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+    body {
+      background-image: url('/MegaThmb/thumb1.jpg'); /* Path to your background */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const circles = [];
+
+    for (let i = 0; i < 30; i++) {
+      circles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+r: 10 + Math.random() * 20,
+        dx: -2 + Math.random() * 4,
+        dy: -2 + Math.random() * 4,
+        color: `hsl(${Math.random() * 360}, 70%, 60%)`
+      });
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Transparent clear
+
+      for (let circle of circles) {
+        ctx.beginPath();
+        ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
+        ctx.fillStyle = circle.color;
+        ctx.fill();
+
+        circle.x += circle.dx;
+        circle.y += circle.dy;
+
+        if (circle.x < 0 || circle.x > canvas.width) circle.dx *= -1;
+        if (circle.y < 0 || circle.y > canvas.height) circle.dy *= -1;
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
+</body>
+</html>
       text-align: center;
       color: var(--text);
       margin-bottom: 25px;
