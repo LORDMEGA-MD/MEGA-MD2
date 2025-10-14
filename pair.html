@@ -513,44 +513,59 @@
   <canvas id="canvas"></canvas>
   <script>
     const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+const balls = [];
 
-    const circles = [];
+for (let i = 0; i < 30; i++) {
+  balls.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    z: Math.random() * 1 + 0.5,
+    dx: (Math.random() - 0.5) * 2,
+    dy: (Math.random() - 0.5) * 2,
+    radius: Math.random() * 20 + 10,
+    color: `hsl(${Math.random() * 360}, 80%, 60%)`
+  });
+}
 
-    for (let i = 0; i < 30; i++) {
-      circles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-r: 10 + Math.random() * 20,
-        dx: -2 + Math.random() * 4,
-        dy: -2 + Math.random() * 4,
-        color: `hsl(${Math.random() * 360}, 70%, 60%)`
-      });
-    }
+function drawBall(ball) {
+  const gradient = ctx.createRadialGradient(
+    ball.x - ball.radius * 0.3,
+    ball.y - ball.radius * 0.3,
+    ball.radius * 0.1,
+    ball.x,
+    ball.y,
+    ball.radius
+  );
+  gradient.addColorStop(0, "#fff");
+  gradient.addColorStop(1, ball.color);
 
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height); // Transparent clear
+  ctx.beginPath();
+  ctx.fillStyle = gradient;
+  ctx.arc(ball.x, ball.y, ball.radius * ball.z, 0, Math.PI * 2);
+  ctx.fill();
+}
 
-      for (let circle of circles) {
-        ctx.beginPath();
-        ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
-        ctx.fillStyle = circle.color;
-        ctx.fill();
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        circle.x += circle.dx;
-        circle.y += circle.dy;
+  for (let ball of balls) {
+    ball.x += ball.dx;
+    ball.y += ball.dy;
 
-        if (circle.x < 0 || circle.x > canvas.width) circle.dx *= -1;
-        if (circle.y < 0 || circle.y > canvas.height) circle.dy *= -1;
-      }
+    if (ball.x < 0 || ball.x > canvas.width) ball.dx *= -1;
+    if (ball.y < 0 || ball.y > canvas.height) ball.dy *= -1;
 
-      requestAnimationFrame(animate);
-    }
+    drawBall(ball);
+  }
 
-    animate();
+  requestAnimationFrame(animate);
+}
+
+animate();
   </script>
 </body>
 </html>
