@@ -31,7 +31,7 @@
     
     body {
       font-family: 'Poppins', sans-serif;
-      background: url('https://cdn.ironman.my.id/i/5xtyu7.jpg') no-repeat center center fixed;
+      background: url('MegaThmb/thumb1.jpg') no-repeat center center fixed;
       background-size: cover;
       display: flex;
       justify-content: center;
@@ -360,7 +360,8 @@
     }
   </style>
 </head>
-<body>
+  <canvas id="canvas" style="position: absolute; top: 0; left: 0;"></canvas>
+  <body>
   <div class="container">
     <div class="card">
       <div class="logo">
@@ -482,5 +483,47 @@
       }
     });
   </script>
+    <canvas id="canvas"></canvas>
+<script>
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const circles = [];
+
+  for (let i = 0; i < 30; i++) {
+    circles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: 10 + Math.random() * 20,
+      dx: -2 + Math.random() * 4,
+      dy: -2 + Math.random() * 4,
+      color: `hsl(${Math.random() * 360}, 70%, 60%)`
+    });
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // keep transparent
+
+    for (let circle of circles) {
+      ctx.beginPath();
+      ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
+      ctx.fillStyle = circle.color;
+      ctx.fill();
+
+      circle.x += circle.dx;
+      circle.y += circle.dy;
+
+      if (circle.x < 0 || circle.x > canvas.width) circle.dx *= -1;
+      if (circle.y < 0 || circle.y > canvas.height) circle.dy *= -1;
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+</script>
 </body>
 </html>
