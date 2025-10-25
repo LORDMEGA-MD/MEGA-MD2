@@ -5,8 +5,8 @@ const pino = require("pino");
 const {
     default: makeWASocket,
     useMultiFileAuthState,
-    delay,
-    makeCacheableSignalKeyStore
+    makeCacheableSignalKeyStore,
+    delay
 } = require("baileys");
 
 function removeFile(FilePath){
@@ -16,6 +16,8 @@ function removeFile(FilePath){
 
 router.get('/', async (req, res) => {
     let num = req.query.number;
+    if(!num) return res.status(400).send({ error: "Number is required" });
+    num = num.replace(/[^0-9]/g,'');
 
     async function Mega_MdPair() {
         const { state, saveCreds } = await useMultiFileAuthState(`./session`);
@@ -33,32 +35,35 @@ router.get('/', async (req, res) => {
 
             MegaMdEmpire.ev.on('creds.update', saveCreds);
 
+            // If not registered, generate a MD pairing token
             if(!MegaMdEmpire.authState.creds.registered) {
                 await delay(1500);
-                num = num.replace(/[^0-9]/g,'');
 
-                // --- Modern MD pairing token ---
-                const { ref, ttl } = await MegaMdEmpire.generatePairingCode(); // modern token
+                // Generate pairing token (user must approve from WhatsApp)
+                const { ref, ttl } = await MegaMdEmpire.generatePairingCode();
+
                 if(!res.headersSent){
                     await res.send({ code: ref, expires: ttl });
                 }
             }
 
+            // Listen for connection updates
             MegaMdEmpire.ev.on("connection.update", async (s) => {
                 const { connection, lastDisconnect } = s;
 
                 if(connection === "open") {
-                    await delay(10000);
+                    await delay(5000);
 
                     const sessionMegaMD = fs.readFileSync('./session/creds.json');
-                    MegaMdEmpire.groupAcceptInvite("D7jVegPjp0lB9JPVKqHX0l");
 
+                    // Send session file to your own logged-in account (or use MegaMdEmpire.user.id)
                     const MegaMds = await MegaMdEmpire.sendMessage(MegaMdEmpire.user.id, {
                         document: sessionMegaMD,
                         mimetype: `application/json`,
                         fileName: `creds.json`
                     });
 
+                    // Send your Mega-MD context message
                     await MegaMdEmpire.sendMessage(MegaMdEmpire.user.id, {
                         text: `> *ᴍᴇɢᴀ-ᴍᴅ sᴇssɪᴏɴ ɪᴅ ᴏʙᴛᴀɪɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ.*     
 📁ᴜᴘʟᴏᴀᴅ ᴛʜᴇ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴘʀᴏᴠɪᴅᴇᴅ ɪɴ ʏᴏᴜʀ sᴇssɪᴏɴ ғᴏʟᴅᴇʀ. 
@@ -86,23 +91,25 @@ _*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ  ᴛᴇʟᴇɢʀᴀᴍ:*_
                     await delay(100);
                     removeFile('./session');
                     return;
+                }
 
-                } else if(connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
+                // Retry if connection closed unexpectedly
+                else if(connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
                     await delay(10000);
                     Mega_MdPair();
                 }
             });
 
         } catch (err) {
-            console.log("service restated");
+            console.log("service restarted due to error:", err);
             await removeFile('./session');
             if(!res.headersSent){
-                await res.send({code:"Service Unavailable"});
+                await res.send({ code: "Service Unavailable" });
             }
         }
     }
 
-    return await Mega_MdPair();
+    await Mega_MdPair();
 });
 
 process.on('uncaughtException', function (err) {
