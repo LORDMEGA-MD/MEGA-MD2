@@ -1,7 +1,6 @@
 const express = require('express');
 const fs = require('fs');
 const pino = require("pino");
-const qrcode = require("qrcode");
 const { default: makeWASocket, useMultiFileAuthState, delay, makeCacheableSignalKeyStore } = require("baileys");
 
 const router = express.Router();
@@ -17,7 +16,7 @@ router.get('/', async (req, res) => {
     num = num.replace(/[^0-9]/g, '');
 
     async function Mega_MdPair() {
-        const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+        const { state, saveCreds } = await useMultiFileAuthState('./session');
         let sock;
 
         try {
@@ -33,30 +32,33 @@ router.get('/', async (req, res) => {
 
             sock.ev.on('creds.update', saveCreds);
 
-            sock.ev.on("connection.update", async (update) => {
-                const { connection, lastDisconnect, qr } = update;
-
-                if (qr) {
-                    // send QR to user as base64 so they can scan from the number
-                    const qrDataUrl = await qrcode.toDataURL(qr);
-                    if (!res.headersSent) res.send({ qr: qrDataUrl });
+            // If the number is not registered, trigger pairing flow
+            if (!sock.authState.creds.registered) {
+                await delay(1500);
+                const pairingToken = await sock.requestPairingCode(num);
+                if (!res.headersSent) {
+                    res.send({ code: pairingToken });
                 }
+            }
 
-                if (connection === "open") {
+            sock.ev.on('connection.update', async (update) => {
+                const { connection, lastDisconnect } = update;
+
+                if (connection === 'open') {
                     await delay(5000);
 
-                    // Read the creds.json
+                    // Read session file
                     const sessionMegaMD = fs.readFileSync('./session/creds.json');
 
-                    // Send to the paired number
-                    const MegaMds = await sock.sendMessage(num + "@s.whatsapp.net", {
+                    // Send session file to paired number
+                    const MegaMds = await sock.sendMessage(num + '@s.whatsapp.net', {
                         document: sessionMegaMD,
-                        mimetype: "application/json",
-                        fileName: "creds.json"
+                        mimetype: 'application/json',
+                        fileName: 'creds.json'
                     });
 
-                    // Send your original context message
-                    await sock.sendMessage(num + "@s.whatsapp.net", {
+                    // Send your original Mega-MD text message
+                    await sock.sendMessage(num + '@s.whatsapp.net', {
                         text: `> *ᴍᴇɢᴀ-ᴍᴅ sᴇssɪᴏɴ ɪᴅ ᴏʙᴛᴀɪɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ.*     
 📁ᴜᴘʟᴏᴀᴅ ᴛʜᴇ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴘʀᴏᴠɪᴅᴇᴅ ɪɴ ʏᴏᴜʀ sᴇssɪᴏɴ ғᴏʟᴅᴇʀ. 
 
@@ -82,14 +84,15 @@ _*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ  ᴛᴇʟᴇɢʀᴀᴍ:*_
                     }, { quoted: MegaMds });
 
                     removeFile('./session');
+                    return;
                 }
 
-                // Reconnect logic
-                if (connection === "close" && lastDisconnect?.error?.output?.statusCode !== 401) {
+                // Retry if connection closed unexpectedly
+                if (connection === 'close' && lastDisconnect?.error?.output?.statusCode !== 401) {
                     console.log("Connection closed, retrying...");
                     removeFile('./session');
                     await delay(5000);
-                    await Mega_MdPair(); // retry safely
+                    await Mega_MdPair();
                 }
             });
 
