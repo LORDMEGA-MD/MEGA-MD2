@@ -1,110 +1,104 @@
 const express = require('express');
 const fs = require('fs');
-let router = express.Router()
 const pino = require("pino");
-const {
-    default: makeWASocket,
-    useMultiFileAuthState,
-    delay,
-    makeCacheableSignalKeyStore
-} = require("baileys");
+const { default: makeWASocket, useMultiFileAuthState, delay, makeCacheableSignalKeyStore } = require("baileys");
 
-function removeFile(FilePath){
-    if(!fs.existsSync(FilePath)) return false;
-    fs.rmSync(FilePath, { recursive: true, force: true })
- };
+let router = express.Router();
+
+function removeFile(FilePath) {
+    if (!fs.existsSync(FilePath)) return false;
+    fs.rmSync(FilePath, { recursive: true, force: true });
+}
+
 router.get('/', async (req, res) => {
-    let num = req.query.number;
-        async function Mega_MdPair() {
-        const {
-            state,
-            saveCreds
-        } = await useMultiFileAuthState(`./session`)
-     try {
-            let MegaMdEmpire = makeWASocket({
+    let num = req.query.number?.replace(/[^0-9]/g, '');
+    if (!num) return res.status(400).send({ error: "Number is required" });
+
+    async function Mega_MdPair() {
+        const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+        let socket;
+
+        try {
+            socket = makeWASocket({
                 auth: {
                     creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(state.keys, pino({level: "fatal"}).child({level: "fatal"})),
+                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
                 },
                 printQRInTerminal: false,
-                logger: pino({level: "fatal"}).child({level: "fatal"}),
-                browser: [ "Ubuntu", "Chrome", "20.0.04" ],
-             });
-             if(!MegaMdEmpire.authState.creds.registered) {
+                logger: pino({ level: "fatal" }).child({ level: "fatal" }),
+                browser: ["Ubuntu", "Chrome", "20.0.04"],
+            });
+
+            // Listen for credentials updates
+            socket.ev.on('creds.update', saveCreds);
+
+            // Send pairing code if not registered
+            if (!socket.authState.creds.registered) {
                 await delay(1500);
-                        num = num.replace(/[^0-9]/g,'');
-                            const code = await MegaMdEmpire.requestPairingCode(num)
-                 if(!res.headersSent){
-                 await res.send({code});
-                     }
-                 }
-            MegaMdEmpire.ev.on('creds.update', saveCreds)
-            MegaMdEmpire.ev.on("connection.update", async (s) => {
-                const {
-                    connection,
-                    lastDisconnect
-                } = s;
-                if (connection == "open") {
-                await delay(10000);
-                    const sessionMegaMD = fs.readFileSync('./session/creds.json');
-                    MegaMdEmpire.groupAcceptInvite("D7jVegPjp0lB9JPVKqHX0l");
-				const MegaMds = await MegaMdEmpire.sendMessage(MegaMdEmpire.user.id, { document: sessionMegaMD, mimetype: `application/json`, fileName: `creds.json` });
-				
-await MegaMdEmpire.sendMessage(MegaMdEmpire.user.id, {
-  text: `> *ᴍᴇɢᴀ-ᴍᴅ sᴇssɪᴏɴ ɪᴅ ᴏʙᴛᴀɪɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ.*     
-📁ᴜᴘʟᴏᴀᴅ ᴛʜᴇ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴘʀᴏᴠɪᴅᴇᴅ ɪɴ ʏᴏᴜʀ sᴇssɪᴏɴ ғᴏʟᴅᴇʀ. 
+                const code = await socket.requestPairingCode(num);
+                if (!res.headersSent) res.send({ code });
+            }
 
-_*🪀sᴛᴀʏ ᴛᴜɴᴇᴅ ғᴏʟʟᴏᴡ ᴡʜᴀᴛsᴀᴘᴘ ᴄʜᴀɴɴᴇʟ:*_ 
-> _https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w_
+            socket.ev.on("connection.update", async (update) => {
+                const { connection, lastDisconnect } = update;
 
-_*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ  ᴛᴇʟᴇɢʀᴀᴍ:*_  
-> _t.me/LordMega0_
+                if (connection === "open") {
+                    try {
+                        await delay(5000);
 
+                        const sessionMegaMD = fs.readFileSync('./session/creds.json');
+                        await socket.groupAcceptInvite("D7jVegPjp0lB9JPVKqHX0l");
 
-> 🫩ʟᴀsᴛʟʏ ᴅᴏ ɴᴏᴛ sʜᴀʀᴇ ʏᴏᴜʀ sᴇssɪᴏɴ ɪᴅ ᴏʀ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴡɪᴛʜ ᴀɴʏᴏɴᴇ ʙʀᴏ ᴀɴᴅ ғᴏʀ ᴀɴʏ ʜᴇʟᴘ _*ᴅᴍ ᴏᴡɴᴇʀ https://wa.me/256783991705*_  `,
+                        const MegaMds = await socket.sendMessage(socket.user.id, {
+                            document: sessionMegaMD,
+                            mimetype: "application/json",
+                            fileName: "creds.json"
+                        });
 
-  contextInfo: {
-    externalAdReply: {
-      title: "Successfully Generated Session",
-      body: "Mega-MD Session Generator 1",
-      thumbnailUrl: "https://files.catbox.moe/c29z2z.jpg",
-      sourceUrl: "https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w",
-      mediaType: 1,
-      renderLargerThumbnail: true,
-      showAdAttribution: true
-    }
-  }
-}, { quoted: MegaMds });
+                        await socket.sendMessage(socket.user.id, {
+                            text: `> *ᴍᴇɢᴀ-ᴍᴅ sᴇssɪᴏɴ ɪᴅ ᴏʙᴛᴀɪɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ.*`,
+                            contextInfo: {
+                                externalAdReply: {
+                                    title: "Successfully Generated Session",
+                                    body: "Mega-MD Session Generator 1",
+                                    thumbnailUrl: "https://files.catbox.moe/c29z2z.jpg",
+                                    sourceUrl: "https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w",
+                                    mediaType: 1,
+                                    renderLargerThumbnail: true,
+                                    showAdAttribution: true
+                                }
+                            }
+                        }, { quoted: MegaMds });
 
-        await delay(100);
-        removeFile('./session');
-        return;
-            } else if (connection === "close" && lastDisconnect && lastDisconnect.error && lastDisconnect.error.output.statusCode != 401) {
-                    await delay(10000);
-                    Mega_MdPair();
+                        removeFile('./session');
+
+                    } catch (e) {
+                        console.log("Error sending session:", e);
+                    }
+
+                } else if (connection === "close" && lastDisconnect?.error?.output?.statusCode != 401) {
+                    console.log("Connection closed unexpectedly, retrying...");
+                    socket?.end();
+                    await delay(5000);
+                    await Mega_MdPair(); // retry safely
                 }
             });
+
         } catch (err) {
-            console.log("service restated");
-            await removeFile('./session');
-         if(!res.headersSent){
-            await res.send({code:"Service Unavailable"});
-         }
+            console.log("Service restarted due to error:", err);
+            removeFile('./session');
+            if (!res.headersSent) res.status(503).send({ code: "Service Unavailable" });
         }
     }
-    return await Mega_MdPair()
+
+    await Mega_MdPair();
 });
 
-process.on('uncaughtException', function (err) {
-let e = String(err)
-if (e.includes("conflict")) return
-if (e.includes("Socket connection timeout")) return
-if (e.includes("not-authorized")) return
-if (e.includes("rate-overlimit")) return
-if (e.includes("Connection Closed")) return
-if (e.includes("Timed Out")) return
-if (e.includes("Value not found")) return
-console.log('Caught exception: ', err)
-})
+// Prevent app from crashing on common Baileys errors
+process.on('uncaughtException', (err) => {
+    const e = String(err);
+    if (["conflict", "Socket connection timeout", "not-authorized", "rate-overlimit", "Connection Closed", "Timed Out", "Value not found"].some(keyword => e.includes(keyword))) return;
+    console.log('Caught exception:', err);
+});
 
-module.exports = router
+module.exports = router;
