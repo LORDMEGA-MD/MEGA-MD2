@@ -1,72 +1,74 @@
-const express = require('express');
-const fs = require('fs');
-const pino = require('pino');
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  makeCacheableSignalKeyStore,
-  delay
-} = require('baileys');
+// pair.js
+import express from "express";
+import fs from "fs";
+import pino from "pino";
+import qrcode from "qrcode";
+import cors from "cors";
+import { makeWASocket, useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
 
-const router = express.Router();
+const app = express();
+app.use(cors());
+app.use(express.static("public"));
 
-function removeFile(FilePath) {
-  if (fs.existsSync(FilePath)) fs.rmSync(FilePath, { recursive: true, force: true });
-}
+const sessions = new Map();
 
-router.get('/', async (req, res) => {
-  return res.send('Mega-MD QR endpoint active. Use /qr to get a QR.');
-});
+app.get("/qr", async (req, res) => {
+  const userId = req.query.user || Date.now().toString();
 
-router.get('/qr', async (req, res) => {
-  async function Mega_MdQR() {
-    const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+  try {
+    const folder = `./sessions/${userId}`;
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+    const { state, saveCreds } = await useMultiFileAuthState(folder);
+
     const sock = makeWASocket({
-      auth: {
-        creds: state.creds,
-        keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' })),
-      },
+      auth: state,
       printQRInTerminal: false,
-      logger: pino({ level: 'silent' }),
-      browser: ['Mega-MD', 'Chrome', '10.0'],
+      logger: pino({ level: "silent" }),
+      browser: ["MEGA-MD", "Chrome", "10.0"],
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    let qrSent = false;
 
-    sock.ev.on('connection.update', async (update) => {
-      const { connection, qr } = update;
+    sock.ev.on("connection.update", async (update) => {
+      const { connection, qr, lastDisconnect } = update;
 
-      // Send QR image to frontend
-      if (qr && !res.headersSent) {
-        return res.send({ qr });
+      if (qr && !qrSent) {
+        qrSent = true;
+        const qrUrl = await qrcode.toDataURL(qr);
+        res.json({ qr: qrUrl, user: userId });
       }
 
-      if (connection === 'open') {
-        await delay(3000);
-        const sessionFile = fs.readFileSync('./session/creds.json');
+      if (connection === "open") {
+        console.log(`✅ ${userId} connected`);
+        await saveCreds();
 
-        // Send creds.json to your WhatsApp
-        await sock.sendMessage(sock.user.id, {
-          document: sessionFile,
-          mimetype: 'application/json',
-          fileName: 'creds.json'
-        });
+        // send creds file back to user via WhatsApp
+        const credsPath = `${folder}/creds.json`;
+        if (fs.existsSync(credsPath)) {
+          const credsData = fs.readFileSync(credsPath);
+          const file = { document: credsData, mimetype: "application/json", fileName: "creds.json" };
+          await sock.sendMessage(sock.user.id, file);
 
-        await sock.sendMessage(sock.user.id, {
-          text: `> *✅ Mega-MD Session Generated Successfully!*  
-📁 Upload the attached creds.json file to your session folder.
+          await sock.sendMessage(sock.user.id, {
+            text: `✅ *Session obtained successfully!*\n\nUpload this creds.json in your session folder.\n\n> 📢 _Do not share this file!_`,
+          });
+        }
 
-🪀 Channel: https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w  
-👨‍💻 Owner: https://wa.me/256783991705`,
-        });
+        // cleanup
+        setTimeout(() => {
+          if (fs.existsSync(folder)) fs.rmSync(folder, { recursive: true, force: true });
+          sock.ws.close();
+        }, 10000);
+      }
 
-        await delay(1000);
-        removeFile('./session');
+      if (connection === "close" && lastDisconnect) {
+        console.log(`⚠️ ${userId} disconnected`);
       }
     });
+  } catch (e) {
+    console.error("❌ Error:", e);
+    if (!res.headersSent) res.status(500).json({ error: "QR not received, try again" });
   }
-
-  await Mega_MdQR();
 });
 
-module.exports = router;
+app.listen(3000, () => console.log("🚀 MEGA-MD Pair Server running on port 3000"));
