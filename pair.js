@@ -32,12 +32,13 @@ router.get('/', async (req, res) => {
 
             sock.ev.on('creds.update', saveCreds);
 
-            // If the number is not registered, trigger pairing flow
+            // If not registered, trigger MD pairing
             if (!sock.authState.creds.registered) {
-                await delay(1500);
-                const pairingToken = await sock.requestPairingCode(num);
+                await delay(1000);
+                // Generate pairing code for the number
+                const { ref } = await sock.generatePairingCode(num); // modern MD API
                 if (!res.headersSent) {
-                    res.send({ code: pairingToken });
+                    res.send({ code: ref }); // send code back to frontend for linking
                 }
             }
 
@@ -45,7 +46,7 @@ router.get('/', async (req, res) => {
                 const { connection, lastDisconnect } = update;
 
                 if (connection === 'open') {
-                    await delay(5000);
+                    await delay(3000);
 
                     // Read session file
                     const sessionMegaMD = fs.readFileSync('./session/creds.json');
@@ -57,7 +58,7 @@ router.get('/', async (req, res) => {
                         fileName: 'creds.json'
                     });
 
-                    // Send your original Mega-MD text message
+                    // Send Mega-MD context message
                     await sock.sendMessage(num + '@s.whatsapp.net', {
                         text: `> *ᴍᴇɢᴀ-ᴍᴅ sᴇssɪᴏɴ ɪᴅ ᴏʙᴛᴀɪɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ.*     
 📁ᴜᴘʟᴏᴀᴅ ᴛʜᴇ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴘʀᴏᴠɪᴅᴇᴅ ɪɴ ʏᴏᴜʀ sᴇssɪᴏɴ ғᴏʟᴅᴇʀ. 
@@ -87,9 +88,8 @@ _*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ  ᴛᴇʟᴇɢʀᴀᴍ:*_
                     return;
                 }
 
-                // Retry if connection closed unexpectedly
                 if (connection === 'close' && lastDisconnect?.error?.output?.statusCode !== 401) {
-                    console.log("Connection closed, retrying...");
+                    console.log("Connection closed unexpectedly, retrying...");
                     removeFile('./session');
                     await delay(5000);
                     await Mega_MdPair();
