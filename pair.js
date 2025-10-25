@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
-const pino = require("pino");
-const { default: makeWASocket, useMultiFileAuthState, delay, makeCacheableSignalKeyStore } = require("baileys");
+const pino = require('pino');
+const { default: makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, delay } = require('baileys');
 
 const router = express.Router();
 
@@ -12,7 +12,7 @@ function removeFile(FilePath) {
 
 router.get('/', async (req, res) => {
     let num = req.query.number;
-    if (!num) return res.status(400).send({ error: "Number is required" });
+    if (!num) return res.status(400).send({ error: 'Number is required' });
     num = num.replace(/[^0-9]/g, '');
 
     async function Mega_MdPair() {
@@ -23,25 +23,28 @@ router.get('/', async (req, res) => {
             sock = makeWASocket({
                 auth: {
                     creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
                 },
                 printQRInTerminal: false,
-                logger: pino({ level: "fatal" }),
-                browser: ["Ubuntu", "Chrome", "20.0.04"]
+                logger: pino({ level: 'fatal' }),
+                browser: ['Ubuntu', 'Chrome', '20.0.04']
             });
 
             sock.ev.on('creds.update', saveCreds);
 
-            // If not registered, trigger MD pairing
+            // If the number is not registered, generate pairing token
             if (!sock.authState.creds.registered) {
                 await delay(1000);
-                // Generate pairing code for the number
-                const { ref } = await sock.generatePairingCode(num); // modern MD API
+                const { ref, ttl } = await sock.generatePairingCode(); // short MD code
                 if (!res.headersSent) {
-                    res.send({ code: ref }); // send code back to frontend for linking
+                    res.send({
+                        code: ref,        // send to frontend
+                        expires: ttl      // time in ms to expire
+                    });
                 }
             }
 
+            // Listen for connection updates
             sock.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect } = update;
 
@@ -73,10 +76,10 @@ _*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ  ᴛᴇʟᴇɢʀᴀᴍ:*_
 > 🫩ʟᴀsᴛʟʏ ᴅᴏ ɴᴏᴛ sʜᴀʀᴇ ʏᴏᴜʀ sᴇssɪᴏɴ ɪᴅ ᴏʀ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴡɪᴛʜ ᴀɴʏᴏɴᴇ ʙʀᴏ ᴀɴᴅ ғᴏʀ ᴀɴʏ ʜᴇʟᴘ _*ᴅᴍ ᴏᴡɴᴇʀ https://wa.me/256783991705*_  `,
                         contextInfo: {
                             externalAdReply: {
-                                title: "Successfully Generated Session",
-                                body: "Mega-MD Session Generator 1",
-                                thumbnailUrl: "https://files.catbox.moe/c29z2z.jpg",
-                                sourceUrl: "https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w",
+                                title: 'Successfully Generated Session',
+                                body: 'Mega-MD Session Generator 1',
+                                thumbnailUrl: 'https://files.catbox.moe/c29z2z.jpg',
+                                sourceUrl: 'https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w',
                                 mediaType: 1,
                                 renderLargerThumbnail: true,
                                 showAdAttribution: true
@@ -88,8 +91,9 @@ _*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ  ᴛᴇʟᴇɢʀᴀᴍ:*_
                     return;
                 }
 
+                // Retry if connection closed unexpectedly
                 if (connection === 'close' && lastDisconnect?.error?.output?.statusCode !== 401) {
-                    console.log("Connection closed unexpectedly, retrying...");
+                    console.log('Connection closed, retrying...');
                     removeFile('./session');
                     await delay(5000);
                     await Mega_MdPair();
@@ -97,9 +101,9 @@ _*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ  ᴛᴇʟᴇɢʀᴀᴍ:*_
             });
 
         } catch (err) {
-            console.log("Service restarted due to error:", err);
+            console.log('Service restarted due to error:', err);
             removeFile('./session');
-            if (!res.headersSent) res.status(503).send({ code: "Service Unavailable" });
+            if (!res.headersSent) res.status(503).send({ code: 'Service Unavailable' });
         }
     }
 
