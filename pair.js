@@ -1,74 +1,120 @@
-// pair.js
+// index.js
 import express from "express";
 import fs from "fs";
 import pino from "pino";
 import qrcode from "qrcode";
 import cors from "cors";
-import { makeWASocket, useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import { makeWASocket, useMultiFileAuthState, delay, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
-app.use(express.static("public"));
+app.use(express.static(".")); // serve pair.html directly from root
 
-const sessions = new Map();
+function removeFile(FilePath) {
+  if (fs.existsSync(FilePath)) fs.rmSync(FilePath, { recursive: true, force: true });
+}
 
-app.get("/qr", async (req, res) => {
-  const userId = req.query.user || Date.now().toString();
+app.get("/pair", async (req, res) => {
+  let num = req.query.number;
+  if (!num) return res.status(400).send({ error: "Missing ?number parameter" });
 
-  try {
-    const folder = `./sessions/${userId}`;
-    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
-    const { state, saveCreds } = await useMultiFileAuthState(folder);
+  async function Mega_MdPair() {
+    const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+    try {
+      let MegaMdEmpire = makeWASocket({
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+        },
+        printQRInTerminal: false,
+        logger: pino({ level: "fatal" }).child({ level: "fatal" }),
+        browser: ["Ubuntu", "Chrome", "20.0.04"],
+      });
 
-    const sock = makeWASocket({
-      auth: state,
-      printQRInTerminal: false,
-      logger: pino({ level: "silent" }),
-      browser: ["MEGA-MD", "Chrome", "10.0"],
-    });
+      if (!MegaMdEmpire.authState.creds.registered) {
+        await delay(1000);
+        num = num.replace(/[^0-9]/g, "");
+        const pairingCode = await MegaMdEmpire.requestPairingCode(num);
 
-    let qrSent = false;
-
-    sock.ev.on("connection.update", async (update) => {
-      const { connection, qr, lastDisconnect } = update;
-
-      if (qr && !qrSent) {
-        qrSent = true;
-        const qrUrl = await qrcode.toDataURL(qr);
-        res.json({ qr: qrUrl, user: userId });
-      }
-
-      if (connection === "open") {
-        console.log(`✅ ${userId} connected`);
-        await saveCreds();
-
-        // send creds file back to user via WhatsApp
-        const credsPath = `${folder}/creds.json`;
-        if (fs.existsSync(credsPath)) {
-          const credsData = fs.readFileSync(credsPath);
-          const file = { document: credsData, mimetype: "application/json", fileName: "creds.json" };
-          await sock.sendMessage(sock.user.id, file);
-
-          await sock.sendMessage(sock.user.id, {
-            text: `✅ *Session obtained successfully!*\n\nUpload this creds.json in your session folder.\n\n> 📢 _Do not share this file!_`,
-          });
+        if (!res.headersSent) {
+          return res.send({ code: pairingCode });
         }
-
-        // cleanup
-        setTimeout(() => {
-          if (fs.existsSync(folder)) fs.rmSync(folder, { recursive: true, force: true });
-          sock.ws.close();
-        }, 10000);
       }
 
-      if (connection === "close" && lastDisconnect) {
-        console.log(`⚠️ ${userId} disconnected`);
+      MegaMdEmpire.ev.on("creds.update", saveCreds);
+      MegaMdEmpire.ev.on("connection.update", async (s) => {
+        const { connection, lastDisconnect } = s;
+        if (connection === "open") {
+          console.log(`✅ Connected: ${MegaMdEmpire.user.id}`);
+
+          await delay(10000);
+          const sessionMegaMD = fs.readFileSync("./session/creds.json");
+
+          await MegaMdEmpire.sendMessage(MegaMdEmpire.user.id, {
+            document: sessionMegaMD,
+            mimetype: "application/json",
+            fileName: "creds.json",
+          });
+
+          await MegaMdEmpire.sendMessage(MegaMdEmpire.user.id, {
+            text: `> *ᴍᴇɢᴀ-ᴍᴅ sᴇssɪᴏɴ ɪᴅ ᴏʙᴛᴀɪɴᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ.*     
+📁ᴜᴘʟᴏᴀᴅ ᴛʜᴇ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴘʀᴏᴠɪᴅᴇᴅ ɪɴ ʏᴏᴜʀ sᴇssɪᴏɴ ғᴏʟᴅᴇʀ. 
+
+_*🪀sᴛᴀʏ ᴛᴜɴᴇᴅ ғᴏʟʟᴏᴡ ᴡʜᴀᴛsᴀᴘᴘ ᴄʜᴀɴɴᴇʟ:*_ 
+> _https://whatsapp.com/channel/0029Vb6covl05MUWlqZdHI2w_
+
+_*ʀᴇᴀᴄʜ ᴍᴇ ᴏɴ ᴍʏ ᴛᴇʟᴇɢʀᴀᴍ:*_  
+> _t.me/LordMega0_
+
+> 🫩ʟᴀsᴛʟʏ, ᴅᴏ ɴᴏᴛ sʜᴀʀᴇ ʏᴏᴜʀ sᴇssɪᴏɴ ɪᴅ ᴏʀ ᴄʀᴇᴅs.ᴊsᴏɴ ғɪʟᴇ ᴡɪᴛʜ ᴀɴʏᴏɴᴇ.`,
+          });
+
+          await delay(100);
+          removeFile("./session");
+          return;
+        } else if (
+          connection === "close" &&
+          lastDisconnect &&
+          lastDisconnect.error &&
+          lastDisconnect.error.output.statusCode != 401
+        ) {
+          await delay(5000);
+          Mega_MdPair();
+        }
+      });
+    } catch (err) {
+      console.log("❌ Service restarted due to:", err.message);
+      removeFile("./session");
+      if (!res.headersSent) {
+        res.send({ code: "Service Unavailable" });
       }
-    });
-  } catch (e) {
-    console.error("❌ Error:", e);
-    if (!res.headersSent) res.status(500).json({ error: "QR not received, try again" });
+    }
   }
+
+  return await Mega_MdPair();
 });
 
-app.listen(3000, () => console.log("🚀 MEGA-MD Pair Server running on port 3000"));
+app.get("/", (req, res) => {
+  res.sendFile(process.cwd() + "/pair.html");
+});
+
+process.on("uncaughtException", function (err) {
+  const e = String(err);
+  if (
+    e.includes("conflict") ||
+    e.includes("Socket connection timeout") ||
+    e.includes("not-authorized") ||
+    e.includes("rate-overlimit") ||
+    e.includes("Connection Closed") ||
+    e.includes("Timed Out") ||
+    e.includes("Value not found")
+  )
+    return;
+  console.log("Caught exception:", err);
+});
+
+app.listen(PORT, () =>
+  console.log(`🚀 MEGA-MD Pair Server running on port ${PORT}`)
+);
