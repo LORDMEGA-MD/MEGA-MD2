@@ -3,7 +3,7 @@
 ## 📊 Visitor Counter
 
 <p align="center">
-  <img src="https://cdn.ironman.my.id/i/5xtyu7.jpg" alt="visitor counter"/>
+  <img src="https://files.catbox.moe/c29z2z.jpg" alt="visitor counter"/>
 </p>
 
 ---
